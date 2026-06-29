@@ -8,31 +8,24 @@ from launch.substitutions import LaunchConfiguration, Command, TextSubstitution
 from ament_index_python.packages import get_package_share_directory
 
 os.environ['RCUTILS_CONSOLE_OUTPUT_FORMAT'] = '{time}: [{name}] [{severity}]\t{message}'
-# Verbose log:
-#os.environ['RCUTILS_CONSOLE_OUTPUT_FORMAT'] = '{time}: [{name}] [{severity}]\t{message} ({function_name}() at {file_name}:{line_number})'
-
-# Start as component:
 
 def generate_launch_description():
-    
+
     tf_imu = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
         arguments = "--x 0 --y 0 --z 0 --roll 0 --pitch 0 -- yaw 0 --frame-id base_link --child-frame-id imu".split(' ')
     )
-
     tf_gnss = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
         arguments = "--x 0 --y 0 --z 0 --roll 0 --pitch 0 -- yaw 0 --frame-id imu --child-frame-id gnss".split(' ')
     )
-
     tf_vsm = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
         arguments = "--x 0 --y 0 --z 0 --roll 0 --pitch 0 -- yaw 0 --frame-id imu --child-frame-id vsm".split(' ')
     )
-
     tf_aux1 = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -47,9 +40,14 @@ def generate_launch_description():
     arg_file_path = DeclareLaunchArgument(name_arg_file_path,
                                           default_value=[get_package_share_directory('septentrio_gnss_driver'), '/config/', LaunchConfiguration(name_arg_file_name)])
 
+    # NEW: namespace arg. Default '' = root = exactly today's behavior.
+    name_arg_namespace = 'namespace'
+    arg_namespace = DeclareLaunchArgument(name_arg_namespace, default_value='')
+
     composable_node = ComposableNode(
         name='septentrio_gnss_driver',
-        package='septentrio_gnss_driver', 
+        namespace=LaunchConfiguration(name_arg_namespace),   # NEW
+        package='septentrio_gnss_driver',
         plugin='rosaic_node::ROSaicNode',
         #emulate_tty=True,
         parameters=[LaunchConfiguration(name_arg_file_path)])
@@ -65,4 +63,4 @@ def generate_launch_description():
         output='screen'
     )
 
-    return launch.LaunchDescription([arg_file_name, arg_file_path, container, tf_imu, tf_gnss, tf_vsm, tf_aux1])
+    return launch.LaunchDescription([arg_file_name, arg_file_path, arg_namespace, container, tf_imu, tf_gnss, tf_vsm, tf_aux1])
